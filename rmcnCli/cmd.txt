@@ -1,0 +1,33 @@
+#include "cmd.h"
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
+#include <vector>
+
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd, "r"), _pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    return result;
+}
+
+void terminal(const char* command, std::vector<std::string> &out, int buffer_size, int& buffers) {
+    std::string res;
+    res = exec(command);
+    buffers = res.size() / buffer_size;
+    buffers++;
+    int l = 0;
+    for (int i = 0; i < buffers; i++) {
+        out.push_back(res.substr(l, buffer_size - 1));
+        l += buffer_size;
+    }
+}
